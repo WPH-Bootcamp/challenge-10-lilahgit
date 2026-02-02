@@ -1,26 +1,110 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-neutral-25: #fdfdfd;
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e9eaeb;
+  --color-neutral-300: #d5d7da;
+  --color-neutral-400: #a4a7ae;
+  --color-neutral-500: #717680;
+  --color-neutral-600: #535862;
+  --color-neutral-700: #414651;
+  --color-neutral-800: #252b37;
+  --color-neutral-900: #181d27;
+  --color-neutral-950: #0a0d12;
+
+  --color-primary-100: #e5f4fb;
+  --color-primary-200: #6fcfff;
+  --color-primary-300: #0093dd;
+  --color-primary-400: #050a1b;
+
+  --color-white: #ffffff;
+  --color-black: #000000;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  body {
+    @apply bg-neutral-25 text-neutral-900;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    @apply text-neutral-900;
+  }
+
+  p {
+    @apply text-neutral-600;
+    line-height: 1.6;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .main-container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .main-container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .main-container {
+      max-width: 1440px;
+      padding-left: 120px;
+      padding-right: 120px;
+    }
+  }
+}
+
+@layer utilities {
+  .header-height {
+    height: 72px;
+  }
+
+  .max-w-search {
+    max-width: 420px;
+  }
+
+  .card-thumb {
+    height: 150px;
+  }
+
+  .detail-cover {
+    height: 220px;
+  }
+
+  @media (min-width: 640px) {
+    .detail-cover {
+      height: 320px;
+    }
+  }
+
+  .cover-preview {
+    height: 200px;
+  }
+
+  .min-h-search {
+    min-height: 360px;
+  }
+
+  .min-h-empty {
+    min-height: 420px;
+  }
+
+  .text-2xs {
+    font-size: 0.6875rem;
+  }
+
+  .text-3xs {
+    font-size: 0.625rem;
+  }
 }

@@ -1,24 +1,46 @@
-/**
- * Blog Types
- * 
- * TODO: Define types sesuai dengan response dari API
- * Contoh structure (sesuaikan dengan API response yang sebenarnya):
- */
+export interface Author {
+  id: number;
+  name: string;
+  username?: string;
+  email?: string;
+  headline?: string;
+  avatarUrl?: string;
+}
 
-// export interface BlogPost {
-//   id: string;
-//   title: string;
-//   content: string;
-//   author: string;
-//   createdAt: string;
-//   image?: string;
-//   category?: string;
-//   // ... tambahkan fields lainnya sesuai API
-// }
+export interface BlogPost {
+  id: number;
+  title: string;
+  content: string;
+  tags: string[];
+  imageUrl?: string | null;
+  author: Author;
+  createdAt: string;
+  likes: number;
+  comments: number;
+}
 
-// export interface BlogPostListResponse {
-//   posts: BlogPost[];
-//   total: number;
-//   page: number;
-//   // ... tambahkan fields lainnya
-// }
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  lastPage: number;
+}
+
+export interface Comment {
+  id: number;
+  content: string;
+  createdAt: string;
+  author: Author;
+}
+
+export interface UserProfile {
+  id: number;
+  name: string;
+  username: string;
+  headline?: string;
+  avatarUrl?: string;
+}
+
+export interface PostsByUsernameResponse extends PaginatedResponse<BlogPost> {
+  user: UserProfile;
+}
