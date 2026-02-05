@@ -1,14 +1,19 @@
-import { AuthHeaderActions, MobileAvatarAction } from "@/components/AuthHeaderActions";
 import Container from "@/components/Container";
 import DocumentIcon from "@/components/DocumentIcon";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
+import {
+  HomeDesktopActions,
+  HomeMobileActions,
+} from "@/components/HomeHeaderActions";
 import Tag from "@/components/Tag";
-import { getRecommendedPosts } from "@/lib/api";
+import { getRecommended } from "@/features/posts/services/postsServices";
 import { clampText, formatDateTime } from "@/lib/format";
-import type { BlogPost } from "@/types/blog";
+import type { BlogPost } from "@/features/posts/types/type";
 import { Eye, PenLine, Pencil, X } from "lucide-react";
 import Link from "next/link";
+
+export const dynamic = "force-dynamic";
 
 type ProfilePageProps = {
   searchParams?: { tab?: string; state?: string; modal?: string };
@@ -21,14 +26,19 @@ function ProfileBanner() {
     <div className="flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-4">
         <div className="h-14 w-14 overflow-hidden rounded-full bg-neutral-200 text-sm font-semibold text-neutral-700">
-          <span className="flex h-full w-full items-center justify-center">JD</span>
+          <span className="flex h-full w-full items-center justify-center">
+            JD
+          </span>
         </div>
         <div>
           <h2 className="text-base font-semibold text-neutral-900">John Doe</h2>
           <p className="text-sm text-neutral-600">Frontend Developer</p>
         </div>
       </div>
-      <Link href="?modal=edit-profile" className="text-sm font-semibold text-primary-300">
+      <Link
+        href="?modal=edit-profile"
+        className="text-sm font-semibold text-primary-300"
+      >
         Edit Profile
       </Link>
     </div>
@@ -62,19 +72,29 @@ function ProfilePostItem({ post }: { post: BlogPost }) {
     <article className="grid gap-4 border-b border-neutral-200 pb-6 last:border-b-0 last:pb-0 sm:grid-cols-[240px,1fr]">
       <div className="hidden overflow-hidden rounded-xl bg-neutral-100 sm:block">
         {post.imageUrl ? (
-          <img src={post.imageUrl} alt={post.title} className="h-full w-full object-cover" />
+          <img
+            src={post.imageUrl}
+            alt={post.title}
+            className="h-full w-full object-cover"
+          />
         ) : (
-          <div className="flex h-full items-center justify-center text-xs text-neutral-400">No image</div>
+          <div className="flex h-full items-center justify-center text-xs text-neutral-400">
+            No image
+          </div>
         )}
       </div>
       <div className="space-y-3">
-        <h3 className="text-base font-semibold text-neutral-900">{post.title}</h3>
+        <h3 className="text-base font-semibold text-neutral-900">
+          {post.title}
+        </h3>
         <div className="flex flex-wrap gap-2">
           {post.tags?.slice(0, 3).map((tag) => (
             <Tag key={`${post.id}-${tag}`} label={tag} />
           ))}
         </div>
-        <p className="text-sm text-neutral-600">{clampText(post.content, 160)}</p>
+        <p className="text-sm text-neutral-600">
+          {clampText(post.content, 160)}
+        </p>
         <p className="text-xs text-neutral-500">
           Created {createdAt} | Last updated {updatedAt}
         </p>
@@ -98,9 +118,16 @@ function EmptyPostsState() {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
       <DocumentIcon />
-      <h3 className="text-base font-semibold text-neutral-900">Your writing journey starts here</h3>
-      <p className="text-sm text-neutral-600">No posts yet, but every great writer starts with the first one.</p>
-      <Link href="/create" className="inline-flex items-center gap-2 rounded-full bg-primary-300 px-8 py-2 text-sm font-semibold text-white">
+      <h3 className="text-base font-semibold text-neutral-900">
+        Your writing journey starts here
+      </h3>
+      <p className="text-sm text-neutral-600">
+        No posts yet, but every great writer starts with the first one.
+      </p>
+      <Link
+        href="/create"
+        className="inline-flex items-center gap-2 rounded-full bg-primary-300 px-8 py-2 text-sm font-semibold text-white"
+      >
         <PenLine className="h-4 w-4" aria-hidden="true" />
         Write Post
       </Link>
@@ -160,7 +187,9 @@ function ChangePasswordForm() {
 function ModalOverlay({ children }: { children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-lg">{children}</div>
+      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-lg">
+        {children}
+      </div>
     </div>
   );
 }
@@ -177,7 +206,9 @@ function EditProfileModal() {
       <div className="mt-6 flex flex-col items-center gap-4">
         <div className="relative">
           <div className="h-20 w-20 overflow-hidden rounded-full bg-neutral-200 text-lg font-semibold text-neutral-700">
-            <span className="flex h-full w-full items-center justify-center">JD</span>
+            <span className="flex h-full w-full items-center justify-center">
+              JD
+            </span>
           </div>
           <span className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full bg-primary-300 text-white">
             <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
@@ -228,7 +259,8 @@ function StatModal({ type }: { type: "like" | "comment" }) {
           {
             name: "Marco",
             date: "27 Maret 2025",
-            message: "Exactly what I needed to read today. Frontend is evolving so fast!",
+            message:
+              "Exactly what I needed to read today. Frontend is evolving so fast!",
           },
           {
             name: "Michael Sailor",
@@ -247,10 +279,16 @@ function StatModal({ type }: { type: "like" | "comment" }) {
       </div>
       <div className="mt-4 border-b border-neutral-200">
         <div className="flex items-center gap-6 text-sm font-semibold">
-          <Link href="?modal=like" className={`pb-3 ${type === "like" ? "border-b-2 border-primary-300 text-primary-300" : "text-neutral-500"}`}>
+          <Link
+            href="?modal=like"
+            className={`pb-3 ${type === "like" ? "border-b-2 border-primary-300 text-primary-300" : "text-neutral-500"}`}
+          >
             Like
           </Link>
-          <Link href="?modal=comment" className={`pb-3 ${type === "comment" ? "border-b-2 border-primary-300 text-primary-300" : "text-neutral-500"}`}>
+          <Link
+            href="?modal=comment"
+            className={`pb-3 ${type === "comment" ? "border-b-2 border-primary-300 text-primary-300" : "text-neutral-500"}`}
+          >
             Comment
           </Link>
         </div>
@@ -260,14 +298,19 @@ function StatModal({ type }: { type: "like" | "comment" }) {
       </p>
       <div className="mt-4 space-y-4">
         {items.map((item, index) => (
-          <div key={index} className="flex items-start gap-3 border-b border-neutral-200 pb-4 last:border-b-0">
+          <div
+            key={index}
+            className="flex items-start gap-3 border-b border-neutral-200 pb-4 last:border-b-0"
+          >
             <div className="h-10 w-10 rounded-full bg-neutral-200 text-xs font-semibold text-neutral-700">
               <span className="flex h-full w-full items-center justify-center">
                 {item.name.slice(0, 2).toUpperCase()}
               </span>
             </div>
             <div>
-              <p className="text-sm font-semibold text-neutral-900">{item.name}</p>
+              <p className="text-sm font-semibold text-neutral-900">
+                {item.name}
+              </p>
               {"headline" in item ? (
                 <p className="text-xs text-neutral-500">{item.headline}</p>
               ) : (
@@ -295,10 +338,16 @@ function DeleteModal() {
       </div>
       <p className="mt-2 text-sm text-neutral-600">Are you sure to delete?</p>
       <div className="mt-6 flex items-center justify-end gap-4">
-        <Link href="/profile" className="text-sm font-semibold text-neutral-600">
+        <Link
+          href="/profile"
+          className="text-sm font-semibold text-neutral-600"
+        >
           Cancel
         </Link>
-        <button className="rounded-full bg-red-500 px-6 py-2 text-sm font-semibold text-white" type="button">
+        <button
+          className="rounded-full bg-red-500 px-6 py-2 text-sm font-semibold text-white"
+          type="button"
+        >
           Delete
         </button>
       </div>
@@ -311,12 +360,15 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const state = searchParams?.state ?? "fill";
   const modal = searchParams?.modal;
 
-  const postsResponse = await getRecommendedPosts(1, PROFILE_POST_LIMIT);
+  const postsResponse = await getRecommended(1, PROFILE_POST_LIMIT);
   const posts = state === "empty" ? [] : postsResponse.data;
 
   return (
     <div className="min-h-screen bg-neutral-25">
-      <Header rightSlot={<AuthHeaderActions />} mobileActions={<MobileAvatarAction />} />
+      <Header
+        rightSlot={<HomeDesktopActions />}
+        mobileActions={<HomeMobileActions />}
+      />
       <main className="py-10">
         <Container>
           <div className="mx-auto w-full max-w-4xl space-y-6">
@@ -330,7 +382,9 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
             ) : (
               <div className="space-y-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm font-semibold text-neutral-900">{posts.length} Post</p>
+                  <p className="text-sm font-semibold text-neutral-900">
+                    {posts.length} Post
+                  </p>
                   <Link
                     href="/create"
                     className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary-300 px-6 py-2 text-sm font-semibold text-white sm:w-auto"

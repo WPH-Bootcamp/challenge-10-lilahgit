@@ -1,16 +1,20 @@
-import { AuthHeaderActions, MobileAvatarAction } from "@/components/AuthHeaderActions";
 import Container from "@/components/Container";
 import DocumentIcon from "@/components/DocumentIcon";
 import EmptyState from "@/components/EmptyState";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
+import {
+  HomeDesktopActions,
+  HomeMobileActions,
+} from "@/components/HomeHeaderActions";
+import Pagination from "@/components/Pagination";
 import PostCard from "@/components/PostCard";
-import { searchPosts } from "@/lib/api";
+import { searchPosts } from "@/features/posts/services/postsServices";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 type SearchPageProps = {
-  searchParams?: { query?: string; page?: string };
+  searchParams?: Promise<{ query?: string; page?: string }>;
 };
 
 const SEARCH_LIMIT = 6;
@@ -20,8 +24,8 @@ function SearchLayout({ children, searchValue }: { children: ReactNode; searchVa
     <div className="min-h-screen bg-neutral-25">
       <Header
         searchDefaultValue={searchValue}
-        rightSlot={<AuthHeaderActions />}
-        mobileActions={<MobileAvatarAction />}
+        rightSlot={<HomeDesktopActions />}
+        mobileActions={<HomeMobileActions />}
         showMobileSearch
       />
       <main className="py-10">{children}</main>
@@ -31,13 +35,24 @@ function SearchLayout({ children, searchValue }: { children: ReactNode; searchVa
 }
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const query = searchParams?.query?.trim() ?? "";
-  const page = Number(searchParams?.page ?? "1");
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const query = resolvedSearchParams.query?.trim() ?? "";
+  const parsedPage = Number(resolvedSearchParams.page ?? "1");
+  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 
   if (!query) {
     return (
       <SearchLayout searchValue="">
-        <Container className="mx-auto min-h-search max-w-4xl" />
+        <Container className="mx-auto min-h-search max-w-4xl">
+          <div className="flex min-h-empty items-center justify-center">
+            <EmptyState
+              variant="centered"
+              icon={<DocumentIcon />}
+              title="Start searching"
+              description="Type a keyword in the search bar."
+            />
+          </div>
+        </Container>
       </SearchLayout>
     );
   }
@@ -68,10 +83,16 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             />
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="home-main-col w-full">
             {results.data.map((post) => (
               <PostCard key={post.id} post={post} hideImageOnMobile />
             ))}
+            <Pagination
+              page={results.page}
+              lastPage={results.lastPage}
+              basePath="/search"
+              query={query}
+            />
           </div>
         )}
       </Container>
