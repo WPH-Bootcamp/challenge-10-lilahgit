@@ -2,8 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { loginUser } from "@/lib/api";
-import { Eye } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { login } from "@/features/auth/services/authServices";
+import { loginSchema } from "@/features/auth/validators/authValidator";
+import { setToken } from "@/shared/lib/auth/token";
+import type { ApiError } from "@/shared/lib/api/apiClient";
+import { Eye, EyeOff } from "lucide-react";
 
 type LoginFormState = {
   email: string;
@@ -11,9 +15,12 @@ type LoginFormState = {
 };
 
 export default function LoginPage() {
+  const router = useRouter();
   const [form, setForm] = useState<LoginFormState>({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof LoginFormState, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const hasError = Boolean(error);
 
   const handleChange = (field: keyof LoginFormState) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -23,21 +30,37 @@ export default function LoginPage() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
+    setFieldErrors({});
 
-    if (!form.email || !form.password) {
-      setError("Please enter your email and password.");
+    const payload = { email: form.email.trim(), password: form.password };
+    const validation = loginSchema.safeParse(payload);
+    if (!validation.success) {
+      const nextFieldErrors: Partial<Record<keyof LoginFormState, string>> = {};
+      validation.error.issues.forEach((issue) => {
+        const field = issue.path[0] as keyof LoginFormState | undefined;
+        if (field && !nextFieldErrors[field]) nextFieldErrors[field] = issue.message;
+      });
+      setFieldErrors(nextFieldErrors);
+      setError(validation.error.issues[0]?.message ?? "Invalid input.");
       return;
     }
 
     try {
       setIsSubmitting(true);
-      await loginUser({ email: form.email, password: form.password });
+      const result = await login(payload);
+      setToken(result.token);
+      router.push("/?auth=1");
+      router.refresh();
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Login failed. Please try again.");
+      const apiError = err as ApiError;
+      const message = apiError?.message ?? "Login failed. Please try again.";
+      if (message.toLowerCase().includes("invalid credentials")) {
+        setFieldErrors({
+          email: "Email or password is incorrect.",
+          password: "Email or password is incorrect.",
+        });
       }
+      setError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -56,26 +79,35 @@ export default function LoginPage() {
               value={form.email}
               onChange={handleChange("email")}
               placeholder="Enter your email"
-              className={`mt-2 w-full rounded-lg border bg-white px-4 py-3 text-sm text-neutral-900 outline-none focus:border-primary-300 focus:ring-2 focus:ring-primary-100 ${hasError ? "border-red-400" : "border-neutral-200"}`}
+              className={`mt-2 w-full rounded-lg border bg-white px-4 py-3 text-sm text-neutral-900 outline-none focus:border-primary-300 focus:ring-2 focus:ring-primary-100 ${fieldErrors.email ? "border-red-400" : "border-neutral-200"}`}
             />
-            {hasError && <span className="mt-2 block text-xs text-red-500">Error Text Helper</span>}
+            {fieldErrors.email && <span className="mt-2 block text-xs text-red-500">{fieldErrors.email}</span>}
           </label>
 
           <label className="block text-sm font-semibold text-neutral-800">
             Password
             <div className="relative mt-2">
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={form.password}
                 onChange={handleChange("password")}
                 placeholder="Enter your password"
-                className={`w-full rounded-lg border bg-white px-4 py-3 pr-10 text-sm text-neutral-900 outline-none focus:border-primary-300 focus:ring-2 focus:ring-primary-100 ${hasError ? "border-red-400" : "border-neutral-200"}`}
+                className={`w-full rounded-lg border bg-white px-4 py-3 pr-10 text-sm text-neutral-900 outline-none focus:border-primary-300 focus:ring-2 focus:ring-primary-100 ${fieldErrors.password ? "border-red-400" : "border-neutral-200"}`}
               />
-              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400">
-                <Eye className="h-4 w-4" aria-hidden="true" />
-              </span>
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                )}
+              </button>
             </div>
-            {hasError && <span className="mt-2 block text-xs text-red-500">Error Text Helper</span>}
+            {fieldErrors.password && <span className="mt-2 block text-xs text-red-500">{fieldErrors.password}</span>}
           </label>
 
           {error && <p className="text-sm font-medium text-red-500">{error}</p>}

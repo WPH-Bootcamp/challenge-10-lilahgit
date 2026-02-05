@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { registerUser } from "@/lib/api";
-import { Eye } from "lucide-react";
+import { register } from "@/features/auth/services/authServices";
+import { registerSchema } from "@/features/auth/validators/authValidator";
+import type { ApiError } from "@/shared/lib/api/apiClient";
+import { Eye, EyeOff } from "lucide-react";
 
 type FormState = {
   name: string;
@@ -21,8 +23,10 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const hasError = Boolean(error);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (field: keyof FormState) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }));
@@ -32,24 +36,34 @@ export default function RegisterPage() {
     event.preventDefault();
     setError("");
     setSuccess("");
+    setFieldErrors({});
 
-    if (!form.name || !form.email || !form.password || !form.confirmPassword) {
-      setError("Please fill in all required fields.");
+    if (form.password !== form.confirmPassword) {
+      setFieldErrors({ confirmPassword: "Confirm password must match password." });
+      setError("Confirm password must match password.");
       return;
     }
 
-    if (form.password !== form.confirmPassword) {
-      setError("Password and confirm password must match.");
+    const payload = {
+      name: form.name.trim(),
+      email: form.email.trim(),
+      password: form.password,
+    };
+    const validation = registerSchema.safeParse(payload);
+    if (!validation.success) {
+      const nextFieldErrors: Partial<Record<keyof FormState, string>> = {};
+      validation.error.issues.forEach((issue) => {
+        const field = issue.path[0] as keyof FormState | undefined;
+        if (field && !nextFieldErrors[field]) nextFieldErrors[field] = issue.message;
+      });
+      setFieldErrors(nextFieldErrors);
+      setError(validation.error.issues[0]?.message ?? "Invalid input.");
       return;
     }
 
     try {
       setIsSubmitting(true);
-      await registerUser({
-        name: form.name,
-        email: form.email,
-        password: form.password,
-      });
+      await register(payload);
       setSuccess("Registration successful. Please log in.");
       setForm({
         name: "",
@@ -58,11 +72,12 @@ export default function RegisterPage() {
         confirmPassword: "",
       });
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Registration failed. Please try again.");
+      const apiError = err as ApiError;
+      const message = apiError?.message ?? "Registration failed. Please try again.";
+      if (message.toLowerCase().includes("email")) {
+        setFieldErrors((prev) => ({ ...prev, email: message }));
       }
+      setError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -81,9 +96,9 @@ export default function RegisterPage() {
               value={form.name}
               onChange={handleChange("name")}
               placeholder="Enter your name"
-              className={`mt-2 w-full rounded-lg border bg-white px-4 py-3 text-sm text-neutral-900 outline-none focus:border-primary-300 focus:ring-2 focus:ring-primary-100 ${hasError ? "border-red-400" : "border-neutral-200"}`}
+              className={`mt-2 w-full rounded-lg border bg-white px-4 py-3 text-sm text-neutral-900 outline-none focus:border-primary-300 focus:ring-2 focus:ring-primary-100 ${fieldErrors.name ? "border-red-400" : "border-neutral-200"}`}
             />
-            {hasError && <span className="mt-2 block text-xs text-red-500">Error Text Helper</span>}
+            {fieldErrors.name && <span className="mt-2 block text-xs text-red-500">{fieldErrors.name}</span>}
           </label>
 
           <label className="block text-sm font-semibold text-neutral-800">
@@ -93,43 +108,61 @@ export default function RegisterPage() {
               value={form.email}
               onChange={handleChange("email")}
               placeholder="Enter your email"
-              className={`mt-2 w-full rounded-lg border bg-white px-4 py-3 text-sm text-neutral-900 outline-none focus:border-primary-300 focus:ring-2 focus:ring-primary-100 ${hasError ? "border-red-400" : "border-neutral-200"}`}
+              className={`mt-2 w-full rounded-lg border bg-white px-4 py-3 text-sm text-neutral-900 outline-none focus:border-primary-300 focus:ring-2 focus:ring-primary-100 ${fieldErrors.email ? "border-red-400" : "border-neutral-200"}`}
             />
-            {hasError && <span className="mt-2 block text-xs text-red-500">Error Text Helper</span>}
+            {fieldErrors.email && <span className="mt-2 block text-xs text-red-500">{fieldErrors.email}</span>}
           </label>
 
           <label className="block text-sm font-semibold text-neutral-800">
             Password
             <div className="relative mt-2">
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={form.password}
                 onChange={handleChange("password")}
                 placeholder="Enter your password"
-                className={`w-full rounded-lg border bg-white px-4 py-3 pr-10 text-sm text-neutral-900 outline-none focus:border-primary-300 focus:ring-2 focus:ring-primary-100 ${hasError ? "border-red-400" : "border-neutral-200"}`}
+                className={`w-full rounded-lg border bg-white px-4 py-3 pr-10 text-sm text-neutral-900 outline-none focus:border-primary-300 focus:ring-2 focus:ring-primary-100 ${fieldErrors.password ? "border-red-400" : "border-neutral-200"}`}
               />
-              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400">
-                <Eye className="h-4 w-4" aria-hidden="true" />
-              </span>
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                )}
+              </button>
             </div>
-            {hasError && <span className="mt-2 block text-xs text-red-500">Error Text Helper</span>}
+            {fieldErrors.password && <span className="mt-2 block text-xs text-red-500">{fieldErrors.password}</span>}
           </label>
 
           <label className="block text-sm font-semibold text-neutral-800">
             Confirm Password
             <div className="relative mt-2">
               <input
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 value={form.confirmPassword}
                 onChange={handleChange("confirmPassword")}
                 placeholder="Enter your confirm password"
-                className={`w-full rounded-lg border bg-white px-4 py-3 pr-10 text-sm text-neutral-900 outline-none focus:border-primary-300 focus:ring-2 focus:ring-primary-100 ${hasError ? "border-red-400" : "border-neutral-200"}`}
+                className={`w-full rounded-lg border bg-white px-4 py-3 pr-10 text-sm text-neutral-900 outline-none focus:border-primary-300 focus:ring-2 focus:ring-primary-100 ${fieldErrors.confirmPassword ? "border-red-400" : "border-neutral-200"}`}
               />
-              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400">
-                <Eye className="h-4 w-4" aria-hidden="true" />
-              </span>
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400"
+                aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                )}
+              </button>
             </div>
-            {hasError && <span className="mt-2 block text-xs text-red-500">Error Text Helper</span>}
+            {fieldErrors.confirmPassword && <span className="mt-2 block text-xs text-red-500">{fieldErrors.confirmPassword}</span>}
           </label>
 
           {error && <p className="text-sm font-medium text-red-500">{error}</p>}

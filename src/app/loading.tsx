@@ -1,8 +1,8 @@
-import Container from "@/components/Container";
-import Footer from "@/components/Footer";
-import Header from "@/components/Header";
-import SectionHeading from "@/components/SectionHeading";
-import { PostListSkeleton } from "@/components/Skeletons";
+import Container from "@/shared/components/Container";
+import Footer from "@/shared/components/Footer";
+import Header from "@/shared/components/Header";
+import SectionHeading from "@/shared/components/SectionHeading";
+import { PostListSkeleton } from "@/shared/components/Skeletons";
 
 function HomeLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -40,4 +40,3 @@ export default function Loading() {
     </HomeLayout>
   );
 }
-
